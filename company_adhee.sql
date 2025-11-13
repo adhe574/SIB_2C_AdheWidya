@@ -147,47 +147,6 @@ SELECT
 -- Refresh materialized view 
 REFRESH MATERIALIZED VIEW dashboard_summary;
 
-CREATE MATERIALIZED VIEW salary_stats_mv AS
-SELECT 
-    department,
-    ROUND(AVG(salary), 2) AS avg_salary,
-    MAX(salary) AS max_salary,
-    MIN(salary) AS min_salary
-FROM employees
-GROUP BY department
-ORDER BY avg_salary DESC;
-
-REFRESH MATERIALIZED VIEW salary_stats_mv;
-
-SELECT COUNT(*) FROM employees;
-
-CREATE MATERIALIZED VIEW tenure_stats_mv AS
-SELECT 
-    CASE
-        WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, hire_date)) < 1 THEN 'Junior'
-        WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, hire_date)) BETWEEN 1 AND 3 THEN 'Middle'
-        ELSE 'Senior'
-    END AS experience_level,
-    COUNT(*) AS total_employees
-FROM employees
-GROUP BY experience_level
-ORDER BY experience_level;
-
-DROP MATERIALIZED VIEW IF EXISTS tenure_stats_mv;
-
-CREATE MATERIALIZED VIEW tenure_stats_mv AS
-SELECT 
-    CASE
-        WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, hire_date)) < 1 THEN 'Junior'
-        WHEN EXTRACT(YEAR FROM AGE(CURRENT_DATE, hire_date)) BETWEEN 1 AND 3 THEN 'Middle'
-        ELSE 'Senior'
-    END AS experience_level,
-    COUNT(*) AS employee_count
-FROM employees
-GROUP BY 1;
-
-DROP MATERIALIZED VIEW IF EXISTS tenure_stats_mv;
-
 CREATE MATERIALIZED VIEW tenure_stats_mv AS
 SELECT 
     CASE 
@@ -208,36 +167,6 @@ SELECT
     ROUND(AVG(EXTRACT(YEAR FROM AGE(CURRENT_DATE, hire_date)) + 
               EXTRACT(MONTH FROM AGE(CURRENT_DATE, hire_date)) / 12), 2) AS avg_years_of_service
 FROM employees;
-
-CREATE OR REPLACE FUNCTION get_employees_by_salary_range(
-    min_salary DECIMAL,
-    max_salary DECIMAL
-)
-RETURNS TABLE (
-    id INT,
-    full_name TEXT,
-    department TEXT,
-    "position" TEXT,
-    salary DECIMAL
-)
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        e.id,
-        e.first_name || ' ' || e.last_name AS full_name,
-        e.department,
-        e."position",
-        e.salary
-    FROM employees e
-    WHERE e.salary BETWEEN min_salary AND max_salary
-    ORDER BY e.salary;
-END;
-$$ LANGUAGE plpgsql;
-
-SELECT * FROM get_employees_by_salary_range(3000000, 8000000);
-
-DROP FUNCTION get_employees_by_salary_range(DECIMAL, DECIMAL);
 
 CREATE OR REPLACE FUNCTION get_employees_by_salary_range(
     min_salary DECIMAL,
@@ -266,54 +195,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 SELECT * FROM get_employees_by_salary_range(3000000, 8000000);
-
-CREATE OR REPLACE FUNCTION get_department_summary()
-RETURNS TABLE (
-    department VARCHAR(50),
-    employee_count BIGINT,
-    avg_salary NUMERIC,
-    total_budget NUMERIC
-)
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        e.department,
-        COUNT(*) AS employee_count,
-        ROUND(AVG(e.salary), 2) AS avg_salary,
-        SUM(e.salary) AS total_budget
-    FROM employees e
-    GROUP BY e.department
-    ORDER BY e.department;
-END;
-$$ LANGUAGE plpgsql;
-
-SELECT * FROM get_department_summary();
-
-DROP FUNCTION get_employees_by_salary_range(DECIMAL, DECIMAL);
-
-CREATE OR REPLACE FUNCTION get_department_summary()
-RETURNS TABLE (
-    department VARCHAR(50),
-    employee_count BIGINT,
-    avg_salary NUMERIC,
-    total_budget NUMERIC
-)
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        e.department,
-        COUNT(*) AS employee_count,
-        ROUND(AVG(e.salary), 2) AS avg_salary,
-        SUM(e.salary) AS total_budget
-    FROM employees e
-    GROUP BY e.department
-    ORDER BY e.department;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP FUNCTION get_department_summary();
 
 CREATE OR REPLACE FUNCTION get_department_summary()
 RETURNS TABLE (
